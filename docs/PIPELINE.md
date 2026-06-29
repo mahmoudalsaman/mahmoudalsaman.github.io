@@ -48,12 +48,24 @@ npm run draft -- briefs/example-brief.json --dry-run
 # reports cost + time for the run.
 npm run draft -- briefs/example-brief.json
 
+# Agent-supplied content — land a draft from a pre-generated content JSON
+# (same shape the model returns). NO external API call, NO spend. An
+# orchestrating AI agent generates the draft and round-trips it through the
+# same authoring writer the SDK path uses.
+npm run draft -- briefs/example-brief.json --from-content briefs/example-brief.content.json
+
 # Then review it like any other draft:
 node scripts/content.mjs status scaling-content-without-scaling-headcount review
 ```
 
 Options: `--model claude-opus-4-8|claude-sonnet-4-6` (default opus),
-`--effort low|medium|high` (default high), `--slug <slug>`, `--overwrite`.
+`--effort low|medium|high` (default high), `--slug <slug>`, `--overwrite`,
+`--from-content <file.json>` (land agent-generated content, no API call).
+
+There are two ways the AI content reaches a draft: the **SDK path** (`@anthropic-ai/sdk`
++ `ANTHROPIC_API_KEY`, for unattended/batch runs) and the **agent-supplied path**
+(`--from-content`, where an orchestrating agent generates the content and lands it
+with zero external spend). Both go through the same `createDraft()` writer.
 
 ## Model & configuration
 
