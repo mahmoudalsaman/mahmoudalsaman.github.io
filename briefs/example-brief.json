@@ -1,0 +1,18 @@
+{
+  "slug": "scaling-content-without-scaling-headcount",
+  "title": "How to scale content output without scaling headcount",
+  "topic": "Using AI-assisted pipelines so a small team can publish more, higher-quality content",
+  "angle": "The leverage comes from a repeatable brief-to-draft pipeline plus a human review gate, not from replacing editors",
+  "audience": "Founders and content leads at small, fast-moving teams",
+  "tone": "Practical, confident, no hype",
+  "category": "playbook",
+  "keywords": ["content operations", "AI content pipeline", "editorial workflow", "content at scale"],
+  "targetWordCount": 800,
+  "keyPoints": [
+    "Why throughput, not headcount, is the real constraint on content output",
+    "The brief -> draft -> review loop and why the human gate stays",
+    "What to automate (drafting, enrichment, SEO metadata) vs. what to keep human (judgment, voice, fact-checking)",
+    "How to measure unit economics: cost and time per published piece"
+  ],
+  "notes": "End with a concrete next step the reader can take this week."
+}
