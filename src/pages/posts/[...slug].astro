@@ -1,0 +1,23 @@
+---
+import { getCollection, render } from 'astro:content';
+import type { GetStaticPaths } from 'astro';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+
+// Generate one static page per post.
+export const getStaticPaths = (async () => {
+  const posts = await getCollection('posts', ({ data }) => !data.draft);
+  return posts.map((post) => ({
+    params: { slug: post.id },
+    props: { post },
+  }));
+}) satisfies GetStaticPaths;
+
+const { post } = Astro.props;
+const { Content } = await render(post);
+---
+
+<BaseLayout title={post.data.title} description={post.data.description}>
+  <article>
+    <Content />
+  </article>
+</BaseLayout>
