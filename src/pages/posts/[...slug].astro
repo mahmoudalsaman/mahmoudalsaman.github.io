@@ -2,8 +2,9 @@
 import { getCollection, render } from 'astro:content';
 import type { GetStaticPaths } from 'astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import { SITE } from '../../consts';
 
-// Generate one static page per post.
+// Generate one static page per non-draft post.
 export const getStaticPaths = (async () => {
   const posts = await getCollection('posts', ({ data }) => !data.draft);
   return posts.map((post) => ({
@@ -14,9 +15,33 @@ export const getStaticPaths = (async () => {
 
 const { post } = Astro.props;
 const { Content } = await render(post);
+
+const canonical = new URL(`/posts/${post.id}/`, Astro.site ?? Astro.url).href;
+
+// Article structured data so posts are eligible for rich results.
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'BlogPosting',
+  headline: post.data.title,
+  description: post.data.description,
+  datePublished: post.data.pubDate.toISOString(),
+  ...(post.data.updatedDate
+    ? { dateModified: post.data.updatedDate.toISOString() }
+    : {}),
+  url: canonical,
+  mainEntityOfPage: canonical,
+  keywords: post.data.tags,
+  author: { '@type': 'Organization', name: SITE.author },
+  publisher: { '@type': 'Organization', name: SITE.author },
+};
 ---
 
-<BaseLayout title={post.data.title} description={post.data.description}>
+<BaseLayout
+  title={post.data.title}
+  description={post.data.description}
+  type="article"
+  jsonLd={jsonLd}
+>
   <article>
     <Content />
   </article>

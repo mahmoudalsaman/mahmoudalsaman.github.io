@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+# Sitemap index emitted by @astrojs/sitemap at build time.
+Sitemap: https://example.com/sitemap-index.xml

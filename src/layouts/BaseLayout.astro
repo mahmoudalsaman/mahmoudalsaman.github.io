@@ -1,22 +1,86 @@
 ---
-// Minimal, niche-agnostic base layout. SEO scaffolding (canonical, OG,
-// structured data) is deliberately light here — T3 owns the full baseline.
+// Niche-agnostic base layout with the full SEO baseline (T3): canonical URL,
+// Open Graph + Twitter cards, schema.org JSON-LD, and privacy-first analytics.
+import { SITE } from '../consts';
+import Analytics from '../components/Analytics.astro';
+
 interface Props {
   title: string;
   description?: string;
+  // Page type drives the default JSON-LD shape.
+  type?: 'website' | 'article';
+  image?: string;
+  // Optional pre-built schema.org object; overrides the default.
+  jsonLd?: Record<string, unknown>;
 }
 
-const { title, description } = Astro.props;
+const {
+  title,
+  description = SITE.description,
+  type = 'website',
+  image = SITE.defaultImage,
+  jsonLd,
+} = Astro.props;
+
+// Resolve canonical + absolute image URLs against the configured `site`.
+const canonical = new URL(Astro.url.pathname, Astro.site ?? Astro.url).href;
+const imageUrl = image
+  ? new URL(image, Astro.site ?? Astro.url).href
+  : undefined;
+
+// Default structured data when a page doesn't supply its own.
+const structuredData = jsonLd ?? {
+  '@context': 'https://schema.org',
+  '@type': type === 'article' ? 'Article' : 'WebSite',
+  name: title,
+  headline: title,
+  description,
+  url: canonical,
+  ...(imageUrl ? { image: imageUrl } : {}),
+  publisher: {
+    '@type': 'Organization',
+    name: SITE.author,
+  },
+};
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang={SITE.lang}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
     {description && <meta name="description" content={description} />}
-    <link rel="canonical" href={Astro.url.href} />
+    <link rel="canonical" href={canonical} />
+    <link
+      rel="alternate"
+      type="application/rss+xml"
+      title={`${SITE.title} RSS feed`}
+      href={new URL('/rss.xml', Astro.site ?? Astro.url).href}
+    />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content={type} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:site_name" content={SITE.title} />
+    {imageUrl && <meta property="og:image" content={imageUrl} />}
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content={imageUrl ? 'summary_large_image' : 'summary'} />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    {imageUrl && <meta name="twitter:image" content={imageUrl} />}
+
+    <!-- schema.org structured data -->
+    <script
+      is:inline
+      type="application/ld+json"
+      set:html={JSON.stringify(structuredData)}
+    />
+
+    <Analytics />
   </head>
   <body>
     <header>

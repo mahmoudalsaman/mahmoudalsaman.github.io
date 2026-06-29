@@ -1,0 +1,50 @@
+---
+// Privacy-first, provider-agnostic analytics loader.
+//
+// Nothing is emitted unless an env var selects a provider, so the site ships
+// with ZERO third-party tracking and ZERO spend by default. Configure via a
+// `.env` file or the host's environment (see .env.example):
+//
+//   PUBLIC_ANALYTICS_PROVIDER = cloudflare | plausible | umami | none
+//   PUBLIC_CF_BEACON_TOKEN    = <token>        (cloudflare)
+//   PUBLIC_PLAUSIBLE_DOMAIN   = qriib.com       (plausible)
+//   PUBLIC_UMAMI_SRC          = https://.../script.js   (umami)
+//   PUBLIC_UMAMI_WEBSITE_ID   = <uuid>          (umami)
+//
+// Recommended default: Cloudflare Web Analytics — free, cookieless, no consent
+// banner required, hosted dashboard with traffic + engagement. Plausible is a
+// paid SaaS; flag that spend to the CEO before enabling in production.
+const env = import.meta.env;
+const provider = (env.PUBLIC_ANALYTICS_PROVIDER ?? 'none').toLowerCase();
+
+const cfToken = env.PUBLIC_CF_BEACON_TOKEN;
+const plausibleDomain = env.PUBLIC_PLAUSIBLE_DOMAIN;
+const umamiSrc = env.PUBLIC_UMAMI_SRC;
+const umamiWebsiteId = env.PUBLIC_UMAMI_WEBSITE_ID;
+---
+
+{
+  provider === 'cloudflare' && cfToken && (
+    <script
+      is:inline
+      defer
+      src="https://static.cloudflareinsights.com/beacon.min.js"
+      data-cf-beacon={`{"token": "${cfToken}"}`}
+    />
+  )
+}
+{
+  provider === 'plausible' && plausibleDomain && (
+    <script
+      is:inline
+      defer
+      data-domain={plausibleDomain}
+      src="https://plausible.io/js/script.js"
+    />
+  )
+}
+{
+  provider === 'umami' && umamiSrc && umamiWebsiteId && (
+    <script is:inline defer src={umamiSrc} data-website-id={umamiWebsiteId} />
+  )
+}
