@@ -69,6 +69,59 @@ function writePost(slug, fmLines, body) {
   writeFileSync(postPath(slug), out);
 }
 
+// Format a YAML scalar safely. Plain word/space runs stay unquoted to match the
+// existing house style; anything with a colon, comma, or other YAML-significant
+// character is JSON-quoted so model-written descriptions/titles never produce
+// invalid frontmatter.
+function yamlScalar(value) {
+  const s = String(value ?? '');
+  return /^[\w][\w .-]*$/.test(s) ? s : JSON.stringify(s);
+}
+
+// Format a tag list as a YAML flow sequence: [a, b, c]; quote unsafe tags.
+function yamlTags(tags) {
+  if (!tags || tags.length === 0) return '[]';
+  return `[${tags.map(yamlScalar).join(', ')}]`;
+}
+
+// Build and write a content piece's Markdown file. Single source of truth for
+// the on-disk frontmatter shape — both the `new` CLI command and the
+// AI-assisted pipeline (scripts/pipeline.mjs) go through here, so the format and
+// the status<->draft invariant never drift. Returns the absolute file path.
+export function createDraft({
+  slug,
+  title,
+  description = '',
+  author = 'qriib',
+  category = '',
+  tags = [],
+  body,
+  status = 'draft',
+  featured = false,
+  overwrite = false,
+}) {
+  if (!slug) die('createDraft: slug is required');
+  if (!title) die('createDraft: title is required');
+  if (!STATES.includes(status)) die(`createDraft: unknown status "${status}"`);
+  const path = postPath(slug);
+  if (existsSync(path) && !overwrite) die(`${slug} already exists`);
+  const fm = [
+    `title: ${yamlScalar(title)}`,
+    `description: ${yamlScalar(description)}`,
+    `author: ${yamlScalar(author)}`,
+    `status: ${status}`,
+    // Derived production-visibility flag, kept in sync with status.
+    `draft: ${status !== 'published'}`,
+    `pubDate: ${today()}`,
+    `category: ${yamlScalar(category)}`,
+    `tags: ${yamlTags(tags)}`,
+    `featured: ${featured}`,
+  ];
+  const content = (body ?? `# ${title}\n\nStart writing here.`).trim();
+  writeFileSync(path, `---\n${fm.join('\n')}\n---\n\n${content}\n`);
+  return path;
+}
+
 function listSlugs() {
   if (!existsSync(POSTS_DIR)) return [];
   return readdirSync(POSTS_DIR)
@@ -80,26 +133,10 @@ function listSlugs() {
 
 function cmdNew(slug, opts) {
   if (!slug) die('usage: content new <slug> [--title "..."]');
-  const path = postPath(slug);
-  if (existsSync(path)) die(`${slug} already exists`);
   const title =
     opts.title ??
     slug.replace(/[-_]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
-  const fm = [
-    `title: ${JSON.stringify(title)}`,
-    'description: ""',
-    'author: qriib',
-    'status: draft',
-    'draft: true',
-    `pubDate: ${today()}`,
-    'category: ""',
-    'tags: []',
-    'featured: false',
-  ];
-  writeFileSync(
-    path,
-    `---\n${fm.join('\n')}\n---\n\n# ${title}\n\nStart writing here.\n`,
-  );
+  createDraft({ slug, title });
   console.log(`✓ created draft: src/content/posts/${slug}.md`);
 }
 
@@ -171,28 +208,34 @@ function parseFlags(argv) {
   return { opts, positional };
 }
 
-const [cmd, ...rest] = process.argv.slice(2);
-const { opts, positional } = parseFlags(rest);
+// Only dispatch CLI commands when run directly (node scripts/content.mjs ...),
+// so other tooling (scripts/pipeline.mjs) can import createDraft cleanly.
+const isMain = process.argv[1] === fileURLToPath(import.meta.url);
 
-switch (cmd) {
-  case 'new':
-    cmdNew(positional[0], opts);
-    break;
-  case 'status':
-    cmdStatus(positional[0], positional[1]);
-    break;
-  case 'list':
-    cmdList(opts);
-    break;
-  default:
-    console.log(
-      [
-        'qriib content workflow CLI',
-        '',
-        '  node scripts/content.mjs new <slug> [--title "..."]   scaffold a draft',
-        '  node scripts/content.mjs status <slug> <state>        draft|review|published',
-        '  node scripts/content.mjs list [--state <state>]       show all pieces',
-      ].join('\n'),
-    );
-    if (cmd && cmd !== 'help') process.exit(1);
+if (isMain) {
+  const [cmd, ...rest] = process.argv.slice(2);
+  const { opts, positional } = parseFlags(rest);
+
+  switch (cmd) {
+    case 'new':
+      cmdNew(positional[0], opts);
+      break;
+    case 'status':
+      cmdStatus(positional[0], positional[1]);
+      break;
+    case 'list':
+      cmdList(opts);
+      break;
+    default:
+      console.log(
+        [
+          'qriib content workflow CLI',
+          '',
+          '  node scripts/content.mjs new <slug> [--title "..."]   scaffold a draft',
+          '  node scripts/content.mjs status <slug> <state>        draft|review|published',
+          '  node scripts/content.mjs list [--state <state>]       show all pieces',
+        ].join('\n'),
+      );
+      if (cmd && cmd !== 'help') process.exit(1);
+  }
 }
