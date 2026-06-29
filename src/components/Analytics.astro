@@ -5,19 +5,22 @@
 // with ZERO third-party tracking and ZERO spend by default. Configure via a
 // `.env` file or the host's environment (see .env.example):
 //
-//   PUBLIC_ANALYTICS_PROVIDER = cloudflare | plausible | umami | none
-//   PUBLIC_CF_BEACON_TOKEN    = <token>        (cloudflare)
-//   PUBLIC_PLAUSIBLE_DOMAIN   = qriib.com       (plausible)
-//   PUBLIC_UMAMI_SRC          = https://.../script.js   (umami)
-//   PUBLIC_UMAMI_WEBSITE_ID   = <uuid>          (umami)
+//   PUBLIC_ANALYTICS_PROVIDER  = cloudflare | goatcounter | plausible | umami | none
+//   PUBLIC_CF_BEACON_TOKEN     = <token>       (cloudflare)
+//   PUBLIC_GOATCOUNTER_ENDPOINT= https://<code>.goatcounter.com/count  (goatcounter)
+//   PUBLIC_PLAUSIBLE_DOMAIN    = qriib.com      (plausible)
+//   PUBLIC_UMAMI_SRC           = https://.../script.js   (umami)
+//   PUBLIC_UMAMI_WEBSITE_ID    = <uuid>         (umami)
 //
 // Recommended default: Cloudflare Web Analytics — free, cookieless, no consent
-// banner required, hosted dashboard with traffic + engagement. Plausible is a
-// paid SaaS; flag that spend to the CEO before enabling in production.
+// banner required, hosted dashboard with traffic + engagement. GoatCounter is an
+// equally free, privacy-friendly hosted fallback (just needs a site endpoint).
+// Plausible is a paid SaaS; flag that spend to the CEO before enabling in prod.
 const env = import.meta.env;
 const provider = (env.PUBLIC_ANALYTICS_PROVIDER ?? 'none').toLowerCase();
 
 const cfToken = env.PUBLIC_CF_BEACON_TOKEN;
+const goatcounterEndpoint = env.PUBLIC_GOATCOUNTER_ENDPOINT;
 const plausibleDomain = env.PUBLIC_PLAUSIBLE_DOMAIN;
 const umamiSrc = env.PUBLIC_UMAMI_SRC;
 const umamiWebsiteId = env.PUBLIC_UMAMI_WEBSITE_ID;
@@ -30,6 +33,16 @@ const umamiWebsiteId = env.PUBLIC_UMAMI_WEBSITE_ID;
       defer
       src="https://static.cloudflareinsights.com/beacon.min.js"
       data-cf-beacon={`{"token": "${cfToken}"}`}
+    />
+  )
+}
+{
+  provider === 'goatcounter' && goatcounterEndpoint && (
+    <script
+      is:inline
+      async
+      data-goatcounter={goatcounterEndpoint}
+      src="//gc.zgo.at/count.js"
     />
   )
 }
