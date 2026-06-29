@@ -1,8 +1,13 @@
 ---
 title: Hello, content
 description: The first page rendered by the qriib content platform.
+author: qriib
+status: published
+draft: false
 pubDate: 2026-06-29
+category: platform
 tags: [meta, platform]
+featured: true
 ---
 
 # Hello, content
