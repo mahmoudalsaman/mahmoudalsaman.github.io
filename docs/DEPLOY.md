@@ -6,12 +6,11 @@ condition (tracked in QRI-6).
 
 ## Two hosting paths (both $0/mo)
 
-- **Path A — GitHub Pages (zero external account, agent-executable).** `gh` is
-  already authenticated (`mahmoudalsaman`) and the site is fully static, so the
-  live site can go up with no third-party account and no credential handoff. The
-  deploy workflow is already committed at `.github/workflows/deploy.yml` (inert
-  until a remote exists + Pages is enabled). This delivers the live/crawlable
-  half of QRI-4 immediately on a "go". See "Path A steps" below.
+- **Path A — GitHub Pages (zero external account, agent-executable). ← LIVE.**
+  `gh` is already authenticated (`mahmoudalsaman`) and the site is fully static,
+  so the live site goes up with no third-party account and no credential handoff.
+  Deployed via a built-output `gh-pages` branch (see "Path A steps"). This
+  delivers the live/crawlable half of QRI-4.
 - **Path B — Cloudflare Pages (CoS-recommended).** Slightly nicer dashboard and
   one-click Cloudflare Web Analytics, but requires a human to create/authorize a
   Cloudflare account. See "Path B steps" below.
@@ -28,15 +27,25 @@ small env-var change once the token exists.
 > A project repo served under `/<repo>/` would need an Astro `base` path + link
 > updates first (the hardcoded `/` links in `BaseLayout.astro` would break).
 
-1. Create the GitHub repo and push `main`:
+Deploy method: built `dist/` is published to a `gh-pages` branch and Pages
+serves from it. (A GitHub Actions workflow would be cleaner, but the available
+`gh` token lacks the `workflow` scope, so a committed workflow file can't be
+pushed. Grant `workflow` scope later to switch to Actions-based deploys.)
+
+1. Create the repo + push source `main`:
    `gh repo create mahmoudalsaman.github.io --public --source=. --remote=origin --push`
-2. Enable Pages: repo Settings → Pages → Source = **GitHub Actions**.
-3. The committed `.github/workflows/deploy.yml` builds (`npm run build`) and
-   deploys `dist/` on every push to `main`. `SITE_URL` is injected automatically
-   from the Pages URL — no code change.
-4. (Analytics) Add repo Actions **variables** `PUBLIC_ANALYTICS_PROVIDER` and
-   `PUBLIC_CF_BEACON_TOKEN` once the beacon token exists; the workflow wires them
-   into the build. Until then the site ships zero trackers.
+2. Build with the live URL and publish the output to `gh-pages`:
+   ```sh
+   SITE_URL='https://mahmoudalsaman.github.io' npm run build
+   touch dist/.nojekyll   # skip Jekyll processing of the static output
+   # push dist/ contents to the gh-pages branch (git worktree or subtree)
+   ```
+3. Enable Pages from the branch:
+   `gh api -X POST repos/mahmoudalsaman/mahmoudalsaman.github.io/pages -f 'source[branch]=gh-pages' -f 'source[path]=/'`
+4. Redeploy on content change: rebuild and re-push `gh-pages` (same as step 2).
+5. (Analytics) Once the beacon token exists, rebuild with
+   `PUBLIC_ANALYTICS_PROVIDER=cloudflare PUBLIC_CF_BEACON_TOKEN=<token>` set and
+   re-push `gh-pages`. Until then the site ships zero trackers.
 
 ## Path B steps — Cloudflare Pages
 
