@@ -4,6 +4,44 @@ This is the end-to-end procedure to put the site live and turn on real
 traffic/engagement reporting. It is the deploy half of QRI-4's success
 condition (tracked in QRI-6).
 
+## Two hosting paths (both $0/mo)
+
+- **Path A — GitHub Pages (zero external account, agent-executable).** `gh` is
+  already authenticated (`mahmoudalsaman`) and the site is fully static, so the
+  live site can go up with no third-party account and no credential handoff. The
+  deploy workflow is already committed at `.github/workflows/deploy.yml` (inert
+  until a remote exists + Pages is enabled). This delivers the live/crawlable
+  half of QRI-4 immediately on a "go". See "Path A steps" below.
+- **Path B — Cloudflare Pages (CoS-recommended).** Slightly nicer dashboard and
+  one-click Cloudflare Web Analytics, but requires a human to create/authorize a
+  Cloudflare account. See "Path B steps" below.
+
+Analytics dashboard (the "real engagement numbers" half) needs a provider with a
+hosted dashboard — Cloudflare Web Analytics (free, needs a Cloudflare account +
+beacon token) or GoatCounter (free, needs a GoatCounter account). Either is a
+small env-var change once the token exists.
+
+## Path A steps — GitHub Pages (recommended fast unblock)
+
+> Assumes a **root** deployment so no Astro `base` path is needed: use a user
+> site repo named `mahmoudalsaman.github.io` (served at root) or a custom domain.
+> A project repo served under `/<repo>/` would need an Astro `base` path + link
+> updates first (the hardcoded `/` links in `BaseLayout.astro` would break).
+
+1. Create the GitHub repo and push `main`:
+   `gh repo create mahmoudalsaman.github.io --public --source=. --remote=origin --push`
+2. Enable Pages: repo Settings → Pages → Source = **GitHub Actions**.
+3. The committed `.github/workflows/deploy.yml` builds (`npm run build`) and
+   deploys `dist/` on every push to `main`. `SITE_URL` is injected automatically
+   from the Pages URL — no code change.
+4. (Analytics) Add repo Actions **variables** `PUBLIC_ANALYTICS_PROVIDER` and
+   `PUBLIC_CF_BEACON_TOKEN` once the beacon token exists; the workflow wires them
+   into the build. Until then the site ships zero trackers.
+
+## Path B steps — Cloudflare Pages
+
+Cost: ~$0/mo.
+
 ## Recommendation (cost: ~$0/mo)
 
 - **Hosting:** Cloudflare Pages — free tier, generous for static sites. Start on
