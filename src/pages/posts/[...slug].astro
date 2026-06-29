@@ -2,11 +2,14 @@
 import { getCollection, render } from 'astro:content';
 import type { GetStaticPaths } from 'astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import { isVisible } from '../../lib/content';
 import { SITE } from '../../consts';
 
-// Generate one static page per non-draft post.
+// Generate one static page per visible post. `isVisible` (src/lib/content) is
+// the single source of truth for the workflow: published-only in production,
+// everything in dev for authoring/review preview.
 export const getStaticPaths = (async () => {
-  const posts = await getCollection('posts', ({ data }) => !data.draft);
+  const posts = await getCollection('posts', isVisible);
   return posts.map((post) => ({
     params: { slug: post.id },
     props: { post },
@@ -42,7 +45,26 @@ const jsonLd = {
   type="article"
   jsonLd={jsonLd}
 >
+  {
+    post.data.status !== 'published' && (
+      <p class="preview-banner">
+        Preview — status: <strong>{post.data.status}</strong>. Only visible on
+        the dev server; it will not ship until published.
+      </p>
+    )
+  }
   <article>
     <Content />
   </article>
 </BaseLayout>
+
+<style>
+  .preview-banner {
+    margin: 0 0 1.5rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px dashed currentColor;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    opacity: 0.8;
+  }
+</style>
